@@ -84,6 +84,15 @@ screen -S SS
 python3 run.py
 ```
 
+cetos 7
+yum install redis python3
+redis-server /etc/redis.conf
+vi config/config.yml // 修改节点号
+screen -S SS
+ss-manager --manager-address /var/run/shadowsocks-manager.sock -s :: -s 0.0.0.0 -t 360 --acl /root/shadowsocks-munager/config/ss.acl &
+python3 run.py
+
+
 ### 启动 ss-manager 与 Munager
 
 运行 `python3 run.py --config-file=config/config.yml` 运行脚本，
