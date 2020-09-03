@@ -72,9 +72,7 @@ class Munager:
 
             if user.available and port in state:
                 if user.passwd != state.get(port).get('password') or \
-                                user.method != state.get(port).get('method') or \
-                                user.plugin != state.get(port).get('plugin') or \
-                                user.plugin_opts != state.get(port).get('plugin_opts'):
+                                user.method != state.get(port).get('method'):
                     if self.ss_manager.remove(user.port) and self.ss_manager.add(
                             user_id=user_id,
                             port=user.port,
@@ -90,16 +88,13 @@ class Munager:
     @gen.coroutine
     def upload_throughput(self):
         state = self.ss_manager.state
-        online_amount = 0
         for port, info in state.items():
             cursor = info.get('cursor')
             throughput = info.get('throughput')
             if throughput < cursor:
-                online_amount += 1
                 self.logger.warning('error throughput, try fix.')
                 self.ss_manager.set_cursor(port, throughput)
             elif throughput > cursor:
-                online_amount += 1
                 dif = throughput - cursor
                 user_id = info.get('user_id')
                 try:
@@ -110,14 +105,23 @@ class Munager:
                 except:
                     self.logger.info('update trafic faileds')
 
+    @gen.coroutine
+    def upload_alive_ip(self):
+        state = self.ss_manager.state
 
-        # update online users count
-        try:
-            result = yield self.mu_api.post_online_user(online_amount)
-            if result:
-                self.logger.info('upload online user count: {}.'.format(online_amount))
-        except HTTPError:
-            self.logger.warning('failed to upload online user count.')
+        for port, info in state.items():
+            user_id = info.get('user_id')
+            IPs = self._get_alive_ip(port)
+            cursor = info.get('cursor')
+            throughput = info.get('throughput')
+
+            if (len(IPs) >= 1 and throughput > cursor):
+                try:
+                    result = yield self.mu_api.post_online_alive_ip(user_id, IPs)
+                    if result:
+                        self.logger.info('update port:{} alive ip: {}.'.format(port, IPs).replace("\n", ""))
+                except:
+                    self.logger.info('update alive ip faileds')
 
     @staticmethod
     def _second_to_msecond(period):
@@ -128,6 +132,12 @@ class Munager:
     def _uptime():
         with open('/proc/uptime', 'r') as f:
             return float(f.readline().split()[0])
+
+    @staticmethod
+    def _get_alive_ip(port):
+        import os
+        return os.popen(
+            "netstat -anp | grep {:d} | grep ESTABLISHED | awk '{{print $5}}' | awk -F \":\" '{{print $1}}' | sort -u".format(port)).readlines()
 
     @staticmethod
     def _load():
@@ -143,7 +153,13 @@ class Munager:
         ).start()
         PeriodicCallback(
             callback=self.upload_throughput,
-            callback_time=self._second_to_msecond(self.config.get('upload_throughput_period', 360)),
+            callback_time=self._second_to_msecond(self.config.get('upload_throughput_period', 600)),
+            io_loop=self.ioloop,
+        ).start()
+
+        PeriodicCallback(
+            callback=self.upload_alive_ip,
+            callback_time=self._second_to_msecond(self.config.get('upload_throughput_period', 480)),
             io_loop=self.ioloop,
         ).start()
         PeriodicCallback(
@@ -151,6 +167,7 @@ class Munager:
             callback_time=self._second_to_msecond(self.config.get("upload_serverload_period",60)),
             io_loop = self.ioloop,
         ).start()
+        
         PeriodicCallback(
             callback_time=self._second_to_msecond(self.config.get("upload_speedtest_period",21600)),
             callback=self.upload_speedtest,

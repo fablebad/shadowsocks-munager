@@ -72,6 +72,7 @@ class MuAPI:
     @gen.coroutine
     def _make_fetch(self, _request):
         try:
+            
             response = yield self.client.fetch(_request)
             content = response.body.decode('utf-8')
             cont_json = json.loads(content, encoding='utf-8')
@@ -90,6 +91,7 @@ class MuAPI:
         response = yield self.client.fetch(request)
         content = response.body.decode('utf-8')
         cont_json = json.loads(content, encoding='utf-8')
+        #self.logger.info("getuseer{}".format(cont_json))
         if cont_json.get('ret') != 1:
             raise MuAPIError(cont_json)
         ret = dict()
@@ -98,29 +100,44 @@ class MuAPI:
         return ret
 
     @gen.coroutine
-    def post_online_user(self, amount):
+    def post_online_alive_ip(self, user_id, IPs):
+        data = []
+        for ip in IPs:
+            data.append({"ip": ip.replace("\n", ""), "user_id": user_id})
         request = self._get_request(
-            path='/mu/nodes/{id}/online_count'.format(id=self.node_id),
+            path='/mod_mu/users/aliveip',
             method='POST',
+            query={
+                'node_id': self.node_id},
             formdata={
-                'count': amount,
-            }
+                'data':data
+            },
+            headers={
+                    'Content-Type': 'application/json; charset=utf-8',
+                },
         )
         result = yield self._make_fetch(request)
         return result
 
     @gen.coroutine
     def upload_throughput(self, user_id, traffic):
+        data = []
+        data.append({
+                    "u": 0,
+                    "d": traffic,
+                    "user_id": user_id,       
+                })
         request = self._get_request(
-            path='/mu/users/{id}/traffic'.format(id=user_id),
+            path='/mod_mu/users/traffic',
             method='POST',
             query={
                 'node_id': self.node_id},
             formdata={
-                'u': 0,
-                'd': traffic,
-                'node_id': self.node_id
-            }
+                'data':data
+            },
+            headers={
+                    'Content-Type': 'application/json; charset=utf-8',
+                },
         )
         result = yield self._make_fetch(request)
         return result

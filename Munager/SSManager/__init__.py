@@ -82,8 +82,6 @@ class SSManager:
             method=method,
             fast_open=self.config.get('fast_open'),
             mode=self.config.get('mode'),
-            plugin=plugin,
-            plugin_opts=plugin_opts,
         )
         req = 'add: {msg}'.format(msg=json.dumps(msg))
         # to bytes
@@ -94,8 +92,6 @@ class SSManager:
         pipeline.hset(self._get_key(['user', str(port)]), 'user_id', user_id)
         pipeline.hset(self._get_key(['user', str(port)]), 'password', password)
         pipeline.hset(self._get_key(['user', str(port)]), 'method', method)
-        pipeline.hset(self._get_key(['user', str(port)]), 'plugin', plugin)
-        pipeline.hset(self._get_key(['user', str(port)]), 'plugin_opts', plugin_opts)
         pipeline.execute()
         time.sleep(5)
         return self.cli.recv(1506) == b'ok'
