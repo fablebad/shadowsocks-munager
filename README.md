@@ -88,11 +88,31 @@ python3 run.py
 ```bash
 
 yum install redis python3
-redis-server /etc/redis.conf
+yum install python-setuptools
+easy_install supervisor
+
+wget --no-check-certificate https://raw.githubusercontent.com/teddysun/shadowsocks_install/master/shadowsocks-libev.sh
+redis-server /etc/redis.conf &
+git clone -b dev https://github.com/fablebad/shadowsocks-munager/
+cd shadowsocks-munager
+pip3 install -r requirements.txt
+/etc/init.d/shadowsocks-libev stop
+
+mkdir -m 700 -p /etc/supervisor
+echo_supervisord_conf > /etc/supervisor/supervisord.conf
+
 vi config/config.yml // 修改节点号
+
+vi /etc/supervisor/supervisord.conf
+
+在文件末尾添加
+[include]
+files=/etc/supervisor/conf.d/*.conf
+cp config/shadowsocks.conf /etc/supervisor/supervisord.conf
+
 screen -S SS
-ss-manager --manager-address /var/run/shadowsocks-manager.sock -s :: -s 0.0.0.0 -t 360 --acl /root/shadowsocks-munager/config/ss.acl &
-python3 run.py
+supervisord -c /etc/supervisor/supervisord.conf
+supervisorctl restart all
 ```
 
 
