@@ -14,6 +14,7 @@ class Munager:
 
         # set logger
         self.logger = logging.getLogger()
+        self.alive_count = 0
 
         # mix
         self.ioloop = IOLoop.current()
@@ -114,8 +115,12 @@ class Munager:
             IPs = self._get_alive_ip(port)
             cursor = info.get('cursor')
             throughput = info.get('throughput')
+            if (throughput > cursor):
+                self.alive_count = 5
+            else:
+                self.alive_count -= 1
 
-            if (len(IPs) >= 1 and throughput > cursor):
+            if (len(IPs) >= 1 and self.alive_count > 0):
                 try:
                     result = yield self.mu_api.post_online_alive_ip(user_id, IPs)
                     if result:
