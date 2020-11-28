@@ -12,5 +12,5 @@ update_port_period: 60
 manager_address: '/var/run/shadowsocks-manager.sock'
 bind_address: '/tmp/shadowsocks-munager.sock'
 
-fast_open: true
+fast_open: false
 mode: 'tcp_and_udp'
