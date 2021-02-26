@@ -108,7 +108,7 @@ vi /etc/supervisor/supervisord.conf
 在文件末尾添加
 [include]
 files=/etc/supervisor/conf.d/*.conf
-cp config/shadowsocks.conf /etc/supervisor/supervisord.conf
+cp config/shadowsocks.conf /etc/supervisor/conf.d/
 
 screen -S SS
 supervisord -c /etc/supervisor/supervisord.conf
